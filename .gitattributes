@@ -1,0 +1,3 @@
+# Normalise line endings so contributors on macOS/Linux do not see
+# whole-file diffs against commits made on Windows.
+* text=auto eol=lf
