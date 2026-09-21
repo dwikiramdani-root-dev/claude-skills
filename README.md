@@ -43,18 +43,23 @@ Then type `/dev-flow` in Claude Code, or just start a feature and it will pick i
 ```
 ONE SESSION
 
-1. PLAN       feature → /grill-with-docs → superpowers:writing-plans
-              bug     → systematic-debugging → superpowers:writing-plans
+0. INTAKE     full ticket or your own description? + ticket number and link
+
+1. PLAN       feature → grilling (automatic, ends when you say stop)
+                      → domain-modeling (only if the domain model moves)
+              bug     → systematic-debugging
+              both    → superpowers:writing-plans
               ⇒ a plan file on disk
 
               ⇣ STOP. You decide when implementation starts.
 
-2. IMPLEMENT  superpowers:subagent-driven-development
+2. IMPLEMENT  branch first, then superpowers:subagent-driven-development
               each task → its own subagent, TDD inside, returns a summary
               main thread stays lean
 
 3. REVIEW     fast checks → /code-review → /improve-codebase-architecture
-              → your project's full gate → you commit
+              → your project's full gate, which must pass
+              ⇒ commit, push, draft PR. Never ready, never merged.
 ```
 
 Three properties that are load-bearing, and the reasons they are there:
@@ -66,8 +71,10 @@ only in the transcript is on a timer; the plan file is what survives it.
 so the main thread stays small across a long session. This is what makes one-session work
 survivable, more than model choice does.
 
-**The agent stops between phase 1 and phase 2, and never commits.** Both transitions are yours.
-Approving a plan approves the plan, not the start of the work.
+**The agent stops between phase 1 and phase 2, and stops again at a draft PR.** Approving a plan
+approves the plan, not the start of the work. Phase 3 may commit, push and open a PR, but only on
+the ticket's own branch, only once the full gate is green, and only as a draft. Marking it ready,
+merging, and anything touching the default branch stay yours.
 
 ## The two-layer idea
 
@@ -120,8 +127,13 @@ plan file name or a commit SHA gets baked in and can never match again. They are
 
 **Some skills can only be typed by a human.** Skills with `disable-model-invocation: true` in
 their frontmatter cannot be triggered by Claude, only by you. `grill-with-docs` and
-`improve-codebase-architecture` are both in this category, which is why the workflow above asks
-*you* to type them.
+`improve-codebase-architecture` are both in this category.
+
+But open them before you accept the gate. `grill-with-docs` is a two-line wrapper whose entire
+body is a call to `grilling` and `domain-modeling` — and neither of *those* is gated. So
+`dev-flow` calls them directly and gets the same interview automatically, without editing anyone
+else's skill. `improve-codebase-architecture` has a real body, so it genuinely has to be typed.
+A gate on a wrapper is only as strong as the things it wraps.
 
 **Skill descriptions cost context on every session.** They are all loaded at startup, in every
 project. Installing a large skills repo and keeping all of it is not free.
