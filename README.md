@@ -4,12 +4,13 @@ A development workflow for [Claude Code](https://claude.com/claude-code), packag
 skills: stress-test the plan, implement it test-first through subagents, then gate it behind a
 real review before anything gets committed.
 
-Two skills:
+Three skills:
 
 | Skill | What it is |
 |---|---|
 | `dev-flow` | The workflow itself. Project-agnostic. |
 | `project-overlay` | A template for the per-project half: your real commands, your rules, your traps. |
+| `rtk` | Tool-choice discipline for [rtk](https://github.com/rtk-ai/rtk), so a session reads cheaply without reading wrongly. |
 
 ## Prerequisites
 
@@ -82,6 +83,23 @@ rules live, and its known traps. The overlay wins wherever they disagree.
 
 The highest-value section of an overlay is usually the list of things your own documentation gets
 wrong. A contradiction is worse than a gap: the agent picks one side and then defends it.
+
+## Reading cheaply (`rtk`)
+
+Optional, unlike the prerequisites above: the skill degrades to useful advice without it.
+
+[rtk](https://github.com/rtk-ai/rtk) compresses command output before the agent reads it, and
+`rtk init -g` installs a hook that rewrites Bash calls for you. The hook is the easy half and it
+needs no skill. The hard half is that the hook **only sees Bash** - `Read`, `Grep` and `Glob` go
+straight past it, and nothing can make an agent *choose* the cheaper tool.
+
+So the `rtk` skill is one rule: narrow with rtk, commit with exact reads. Lossy output is right
+while you are still discarding candidates and wrong the moment you are writing an edit. That line
+matters more than it sounds, because `Edit`'s "read the file first" guardrail does not check that
+you saw the text - only that the file was read at some point. An `old_string` inferred from
+stripped-out function bodies is accepted without complaint.
+
+Type `/rtk`, or paste the skill's overlay block into a project overlay to make it always-on.
 
 ## Traps worth knowing about
 
