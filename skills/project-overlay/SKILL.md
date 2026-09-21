@@ -72,7 +72,44 @@ server):
 
 ---
 
-## 4. Project guardrails
+## 4. Ticket, branch and PR conventions
+
+> `dev-flow` asks for a ticket up front, cuts a branch before Phase 2, and opens a **draft** PR at
+> the end of Phase 3. All three need project-specific answers. Without them the agent invents a
+> branch name and a PR shape, and both are then wrong in a way nobody notices until review.
+
+**Ticket system.** Which one, and the URL shape so a bare number can be turned into a link:
+
+```
+<e.g. Linear, https://linear.app/acme/issue/PROJ-214>
+```
+
+**Branch naming.** The real convention, with a real example:
+
+```
+<e.g. feat/PROJ-214-short-slug, fix/PROJ-98-short-slug>
+```
+
+Say what the type prefixes are, and whether the ticket number is required. If branches are cut
+from something other than the default branch, say so and name it.
+
+**PR template.** Where it lives, if it exists:
+
+```
+<e.g. .github/pull_request_template.md, or "none - use the dev-flow fallback">
+```
+
+If any section of that template is routinely left blank in this project, say which and why -
+otherwise the agent will fill it in with something invented rather than leave it empty.
+
+**Does this project even use PRs?** If work goes straight to a shared branch, say so explicitly
+and say who is allowed to do it. Note any branch protection or ruleset, and whether it actually
+blocks or merely warns - a rule that warns and then allows the push teaches the agent that the
+rule is decorative.
+
+---
+
+## 5. Project guardrails
 
 > Anything that would cause real damage. Be concrete about the blast radius.
 
@@ -90,4 +127,6 @@ Common ones worth stating explicitly if they apply:
 - [ ] Renamed the skill and its `name:` frontmatter to something project-specific
 - [ ] Every `<placeholder>` replaced or the section deleted
 - [ ] Every command actually run once, not written from memory
+- [ ] Branch convention copied from a branch that exists, not from the style guide
+- [ ] Branch protection checked by trying it, not by reading the settings page
 - [ ] Nothing in it would be a disclosure if the repo became public
