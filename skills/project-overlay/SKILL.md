@@ -93,6 +93,29 @@ server):
 Say what the type prefixes are, and whether the ticket number is required. If branches are cut
 from something other than the default branch, say so and name it.
 
+**Base branch.** The branch features actually land on, which is **not** always `main`:
+
+```
+<e.g. staging - main moves only on a release>
+```
+
+Check `origin/HEAD` rather than assuming. Getting this wrong means branching from stale code and
+opening every PR against the wrong target.
+
+**What CI runs, and on what trigger.** The question an agent needs answered is *"after I push, what
+has actually been checked?"*:
+
+```
+<e.g. pull_request into main or staging only - pushing a feature branch runs nothing>
+```
+
+If any suite is delegated to CI rather than run locally, say so and say who decided. Otherwise an
+agent will either waste a session trying to run it or, worse, imply it passed.
+
+**Say whether draft PRs skip anything.** Expensive suites are often configured to skip drafts and
+run only when a PR is marked ready. `dev-flow` ends at a draft, so where this applies the handover
+has a hole in it that nobody is told about.
+
 **PR template.** Where it lives, if it exists:
 
 ```
