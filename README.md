@@ -43,13 +43,15 @@ Then type `/dev-flow` in Claude Code, or just start a feature and it will pick i
 ```
 ONE SESSION
 
-0. INTAKE     full ticket or your own description? + ticket number and link
+0. INTAKE     full ticket or your own description? + number and link
+              does it cross repos? → lead repo + one alignment spec
 
 1. PLAN       feature → grilling (automatic, ends when you say stop)
                       → domain-modeling (only if the domain model moves)
               bug     → systematic-debugging
               both    → superpowers:writing-plans
               ⇒ a plan file on disk
+              too big for one plan? → decisions record, then a plan per slice
 
               ⇣ STOP. You decide when implementation starts.
 
@@ -60,6 +62,7 @@ ONE SESSION
 3. REVIEW     fast checks → /code-review → /improve-codebase-architecture
               → your project's full gate, which must pass
               ⇒ commit, push, draft PR. Never ready, never merged.
+              sliced? → finish the ledger: what actually happened, gates and all
 ```
 
 Three properties that are load-bearing, and the reasons they are there:

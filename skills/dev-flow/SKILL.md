@@ -1,6 +1,6 @@
 ---
 name: dev-flow
-description: Standard workflow for feature work and bug fixes in any repo - stress-tested plan, then TDD implementation, then a review gate and a draft PR. Use when starting a new feature or bug fix, or when the user types /dev-flow.
+description: Standard workflow for feature work and bug fixes in any repo - stress-tested plan, then TDD implementation, then a review gate, a draft PR, and watching that PR through CI and review. Use when starting a new feature or bug fix, or when the user types /dev-flow.
 ---
 
 # Dev Flow
@@ -26,9 +26,23 @@ Ask for all of this in one message, before anything else:
    user's summary is not automatically complete.
 2. **Ticket number and link.** Both. The number names the branch, the link goes in the PR body.
    Asking now means never asking twice.
+3. **Does this ticket cross repositories?** Ask outright. One ticket touching a web app, a mobile
+   app and a backend is normal, and discovering it in Phase 2 means re-planning.
 
 No ticket for this work? Say so and continue, but ask what the branch should be called - the
 naming convention has lost its input.
+
+### If the ticket crosses repositories
+
+Name a **lead repository** - the one whose design constrains the others - and work from it.
+
+Write **one alignment spec** in the lead repo covering the contract between them: what each side
+owns, what shape the data crosses in, and which side ships first. Every repo's plan then refers to
+it rather than restating it, and the other repos' PRs link back to it.
+
+One alignment spec, one plan per repo, one branch per repo, one draft PR per repo. Do not try to
+make a single plan span repositories: the gates, the review and the merge are all per-repo, so a
+shared plan just hides which parts are verified.
 
 ---
 
@@ -61,6 +75,40 @@ Route by task type. These are different problems with different entry points.
 A single long session will hit context compaction. Anything living only in the transcript is on
 a timer. The plan file, plus any ADRs or `CONTEXT.md` updates, is what survives.
 
+### If the ticket is too big for one plan
+
+Signs: it spans several subsystems, it needs a migration with a cutover, or it cannot land in one
+reviewable PR. Do not write one enormous plan. Slice it.
+
+1. **Write a decisions record first.** The grilling produced answers; capture them in one file
+   with the question and the answer, and mark it authoritative. Its job is to stop the next
+   session re-litigating settled decisions. If something in it looks wrong later, say so
+   explicitly rather than quietly designing around it.
+2. **Cut slices that each land on their own.** A slice is a plan file and a PR, not a chapter.
+   Number them, and say which slices depend on which.
+3. **Write a plan per slice**, when that slice starts - not all of them up front. Later slices get
+   better plans once earlier ones have taught you something.
+4. **Write a kickoff** if a different session will pick the ticket up mid-flight. It says what is
+   already decided, what is already built, what reading order to follow, and what will waste time
+   if rediscovered.
+
+Name these so they sort together with the ticket: a shared `<date>-<ticket>-` prefix.
+
+### Ledgers
+
+**Each slice gets a ledger, written during Phase 2 and finished before Phase 3 ends.** It records
+what actually happened, as against what the plan said would happen:
+
+- Task results, including anything that turned out differently.
+- **Gate results, honestly.** Which gates passed, which failed, which were skipped and on whose
+  decision. A gate that was not run is recorded as not run, never implied green.
+- Defects found **in the plan itself**. These are the expensive lessons and the reason the ledger
+  earns its keep - a plan nobody corrected is a plan the next slice repeats.
+- What was deliberately left alone, and follow-ups worth their own ticket.
+
+The ledger is where "it worked on my machine" becomes a reviewable claim. Write it as you go;
+reconstructing it at the end is how the skipped gates quietly become green ones.
+
 ### STOP at the end of Phase 1
 
 **Do not begin Phase 2 on your own. Ever.** When the plan file is written, stop and hand it to
@@ -81,9 +129,13 @@ the work. If it is ambiguous, ask.
 **Branch first, before any code exists.** Cut it the moment the user says to start, so the default
 branch stays clean and no work has to be rescued off it later.
 
-- Use the overlay's naming convention. If it has none, use `<type>/<ticket>-<slug>`, for example
-  `feat/PROJ-214-token-budget`, and say which you used.
-- Branch from an up-to-date default branch.
+- **Take the naming convention from the overlay.** If there is none, do not invent one from
+  habit - read the repo's existing branch names and copy their shape, then say which you copied.
+  House conventions vary wildly (`<user>/<TICKET>-<Title>` is as common as `feat/<ticket>-<slug>`)
+  and a wrong guess is invisible until review.
+- **Branch from the repo's actual default branch**, and check what it is rather than assuming
+  `main` - plenty of repos develop on `staging` or `develop` and release from `main`.
+- One branch per repo when the ticket crosses repositories. One slice per branch when sliced.
 - This is the **only** point in the workflow authorised to create a branch.
 
 **Default: `superpowers:subagent-driven-development`.** Do not implement inline.
@@ -130,7 +182,13 @@ Cheap correctness first, so no tokens are spent reviewing code that does not com
 7. **Commit, push, open a draft PR.**
    - Stage by explicit path. Never `git add .` - repos may track `.env*` files holding live keys.
    - Push the ticket branch. **Never push to the default branch.**
-   - `gh pr create --draft`, titled from the ticket.
+   - `gh pr create --draft`, titled from the ticket. **Check the base branch** - `gh` defaults to
+     the repo's default branch, which may not be where features land.
+   - One draft PR per repo for a cross-repo ticket, each linking the alignment spec, each saying
+     which repo ships first.
+   - **Say what CI will and will not run.** Many repos only run tests on pull requests, so the
+     push itself verified nothing. Never let a green local gate and a successful push read as
+     more coverage than they are.
    - **Body:** use the repo's own template if there is one. Check
      `.github/pull_request_template.md`, `.github/PULL_REQUEST_TEMPLATE.md`, and
      `.github/PULL_REQUEST_TEMPLATE/`. Fill every section it defines; do not drop the ones that
@@ -138,7 +196,14 @@ Cheap correctness first, so no tokens are spent reviewing code that does not com
      that you did.
    - **Draft, always.** Do not mark it ready for review, do not request reviewers, do not merge,
      do not enable auto-merge. The draft is the handover, not the decision.
-8. **Stop.** Report the PR URL, what passed, and what did not, with the actual output.
+   - **Check whether draft status suppresses any CI.** Expensive suites are often configured to
+     skip drafts and run only once a PR is marked ready. Where that is true, the draft you just
+     opened has *less* coverage than a ready one, and nothing in the PR says so. Name the suite
+     that did not run. Still do not mark it ready yourself - marking ready is the user's call,
+     and it is also what starts the expensive job.
+8. **Finish the ledger** if the ticket was sliced. Gate results go in as they actually came out.
+9. **Report, then go to Phase 4.** Give the PR URL, what passed, and what did not, with the
+   actual output. Then start Phase 4 straight away; it is part of this workflow, not a follow-up.
 
 ### Fallback PR body
 
@@ -169,13 +234,56 @@ is not.
 
 ---
 
+## Phase 4 - Watch the PR
+
+The PR is open, and this session still holds what no later session will: the ticket, the
+grilling answers, the plan and the ledger. Keep it watching the PR so the user can move on.
+
+### Start watching
+
+Use the first of these that exists:
+
+1. **The host watches the PR for you** (e.g. the Claude desktop app's PR tools): bind the PR to
+   this session and offer the host's auto-fix/monitor to the user. The user turns it on - never
+   enable it silently. The host then wakes this session on CI failures, conflicts and comments.
+2. **No host watcher:** ask the user to type `/steward`. It is user-invoked only, so you cannot
+   start it. Give them the rules below as a one-line preamble to paste with it.
+3. **Neither:** say so, and tell the user Phase 4 is not running. Never poll CI on a timer
+   yourself (`sleep` loops, cron, `/loop`).
+
+### What to do when woken
+
+| Event | Do |
+|---|---|
+| CI check fails | Read the failing job's log. Decide **flake or real** before touching code: the overlay lists known flakes and their fix (usually rerun the failed jobs). Real failure: reproduce locally, fix, run fast checks, push. |
+| Review comment | Make the change it asks for if it is correct. If it is wrong or unclear, do not push anything for it: tell the user what the comment says and why you disagree (`superpowers:receiving-code-review`). |
+| Conflict with base | Report it. Do not merge or rebase the base branch in unless the user, or a reviewer on the PR, asks. |
+| PR merged or closed | Finish the ledger, report, stop watching. |
+
+### Rules while watching
+
+- **Fixes only.** Commit and push to the PR's own branch, staged by explicit path. Never post PR
+  replies, never resolve review threads: the user owns the conversation on the PR.
+- **Same bar as Phase 3.** Fast checks before every push; the full gate when the fix touches more
+  than the one failing spot. A fix you could not verify is reported as unverified.
+- **One commit per fix**, message naming what it answers (CI job or comment), so the reviewer can
+  match them up.
+- **Never** mark the PR ready, request reviewers, approve, merge, or enable auto-merge - unless
+  the overlay or the user explicitly authorises it for this repo.
+- **Record every fix in the ledger** as it lands: event, cause, fix, gate result.
+- **Stop and ask** when the same check fails twice after your fixes, or a comment would change
+  the agreed plan. Those are design questions, not watch duties.
+
+---
+
 ## Guardrails
 
 - **Never start Phase 2 automatically.** Phase 1 ends with a plan handed over, then you wait for
   an explicit instruction to implement. The user starts the work, every time.
-- **Commit, push and PR are authorised in Phase 3 only**, on the ticket's own branch, as a draft,
-  and only after the full gate passes. That authorisation does not extend to the default branch,
-  to marking a PR ready, to merging, or to any other point in the session.
+- **Commit, push and PR are authorised in Phases 3 and 4 only**, on the ticket's own branch, as a
+  draft, and only after the gate passes (Phase 4: fix commits on that same branch). That
+  authorisation does not extend to the default branch, to marking a PR ready, to merging, or to
+  any other point in the session.
 - **Branches are created in Phase 2 only.** Never switch branches without explicit instruction.
 - **Never `git add .`** - stage by explicit path.
 - Report failures faithfully, with output. Never claim completion on unverified work.
