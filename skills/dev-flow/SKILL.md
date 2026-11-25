@@ -1,6 +1,6 @@
 ---
 name: dev-flow
-description: Standard workflow for feature work and bug fixes in any repo - stress-tested plan, then TDD implementation, then a review gate and a draft PR. Use when starting a new feature or bug fix, or when the user types /dev-flow.
+description: Standard workflow for feature work and bug fixes in any repo - stress-tested plan, then TDD implementation, then a review gate, a draft PR, and watching that PR through CI and review. Use when starting a new feature or bug fix, or when the user types /dev-flow.
 ---
 
 # Dev Flow
@@ -202,7 +202,8 @@ Cheap correctness first, so no tokens are spent reviewing code that does not com
      that did not run. Still do not mark it ready yourself - marking ready is the user's call,
      and it is also what starts the expensive job.
 8. **Finish the ledger** if the ticket was sliced. Gate results go in as they actually came out.
-9. **Stop.** Report the PR URL, what passed, and what did not, with the actual output.
+9. **Report, then go to Phase 4.** Give the PR URL, what passed, and what did not, with the
+   actual output. Then start Phase 4 straight away; it is part of this workflow, not a follow-up.
 
 ### Fallback PR body
 
@@ -233,13 +234,56 @@ is not.
 
 ---
 
+## Phase 4 - Watch the PR
+
+The PR is open, and this session still holds what no later session will: the ticket, the
+grilling answers, the plan and the ledger. Keep it watching the PR so the user can move on.
+
+### Start watching
+
+Use the first of these that exists:
+
+1. **The host watches the PR for you** (e.g. the Claude desktop app's PR tools): bind the PR to
+   this session and offer the host's auto-fix/monitor to the user. The user turns it on - never
+   enable it silently. The host then wakes this session on CI failures, conflicts and comments.
+2. **No host watcher:** ask the user to type `/steward`. It is user-invoked only, so you cannot
+   start it. Give them the rules below as a one-line preamble to paste with it.
+3. **Neither:** say so, and tell the user Phase 4 is not running. Never poll CI on a timer
+   yourself (`sleep` loops, cron, `/loop`).
+
+### What to do when woken
+
+| Event | Do |
+|---|---|
+| CI check fails | Read the failing job's log. Decide **flake or real** before touching code: the overlay lists known flakes and their fix (usually rerun the failed jobs). Real failure: reproduce locally, fix, run fast checks, push. |
+| Review comment | Make the change it asks for if it is correct. If it is wrong or unclear, do not push anything for it: tell the user what the comment says and why you disagree (`superpowers:receiving-code-review`). |
+| Conflict with base | Report it. Do not merge or rebase the base branch in unless the user, or a reviewer on the PR, asks. |
+| PR merged or closed | Finish the ledger, report, stop watching. |
+
+### Rules while watching
+
+- **Fixes only.** Commit and push to the PR's own branch, staged by explicit path. Never post PR
+  replies, never resolve review threads: the user owns the conversation on the PR.
+- **Same bar as Phase 3.** Fast checks before every push; the full gate when the fix touches more
+  than the one failing spot. A fix you could not verify is reported as unverified.
+- **One commit per fix**, message naming what it answers (CI job or comment), so the reviewer can
+  match them up.
+- **Never** mark the PR ready, request reviewers, approve, merge, or enable auto-merge - unless
+  the overlay or the user explicitly authorises it for this repo.
+- **Record every fix in the ledger** as it lands: event, cause, fix, gate result.
+- **Stop and ask** when the same check fails twice after your fixes, or a comment would change
+  the agreed plan. Those are design questions, not watch duties.
+
+---
+
 ## Guardrails
 
 - **Never start Phase 2 automatically.** Phase 1 ends with a plan handed over, then you wait for
   an explicit instruction to implement. The user starts the work, every time.
-- **Commit, push and PR are authorised in Phase 3 only**, on the ticket's own branch, as a draft,
-  and only after the full gate passes. That authorisation does not extend to the default branch,
-  to marking a PR ready, to merging, or to any other point in the session.
+- **Commit, push and PR are authorised in Phases 3 and 4 only**, on the ticket's own branch, as a
+  draft, and only after the gate passes (Phase 4: fix commits on that same branch). That
+  authorisation does not extend to the default branch, to marking a PR ready, to merging, or to
+  any other point in the session.
 - **Branches are created in Phase 2 only.** Never switch branches without explicit instruction.
 - **Never `git add .`** - stage by explicit path.
 - Report failures faithfully, with output. Never claim completion on unverified work.
